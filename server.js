@@ -45,5 +45,5 @@ app.get('/pixel/thankyou', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Pixel server listening at http://localhost:${port}`); //testing
+  console.log(`Pixel server listening at http://localhost:${port}`); //testings
 });
