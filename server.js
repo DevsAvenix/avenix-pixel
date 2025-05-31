@@ -2,6 +2,9 @@ const express = require('express');
 const app = express();
 const port = 3000; // You can change this port if needed
 
+app.get('/', (req, res) => {
+  res.send('Hi');
+});
 // Endpoint for the homepage pixel
 app.get('/pixel/home', (req, res) => {
   const ipAddress = req.ip || req.connection.remoteAddress;
