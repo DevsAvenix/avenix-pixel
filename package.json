@@ -1,14 +1,16 @@
 {
   "name": "avenix-pixel",
   "version": "1.0.0",
+  "description": "Pixel tracking server for Avenix website analytics",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["pixel", "tracking", "analytics", "vercel"],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "express": "^5.1.0"
   }
