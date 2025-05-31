@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 3000; // You can change this port if needed
+const port = 3000;
 
 app.use(express.json());
 
@@ -10,55 +10,93 @@ function getClientIp(req) {
   return xForwardedFor ? xForwardedFor.split(',')[0].trim() : req.socket.remoteAddress;
 }
 
+function getClientId(req) {
+  // Multiple ways to identify client (in order of preference)
+  if (req.query.client) return req.query.client;
+  
+  // Extract from referrer domain
+  const referer = req.headers.referer;
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      return url.hostname;
+    } catch (e) {
+      return 'unknown-domain';
+    }
+  }
+  
+  return 'unknown';
+}
+
 function logPixelEvent(req, pixelSource) {
   const ip = getClientIp(req);
+  const clientId = getClientId(req);
   const pageURL = req.query.url || req.body.url || 'unknown';
   const eventTime = req.query.time || req.body.time || Date.now();
   const userDevice = req.query.device || req.body.device || req.headers['user-agent'] || 'unknown';
-
-  // Structured log for Vercel
+  
+  // Enhanced structured log
   console.log(JSON.stringify({
-    event: 'pixel',
+    event: 'pixel_tracking',
+    clientId,
     pixelSource,
     ip,
     pageURL,
-    eventTime,
+    eventTime: new Date(parseInt(eventTime)).toISOString(),
     userDevice,
-    timestamp: new Date().toISOString()
+    serverTimestamp: new Date().toISOString(),
+    userAgent: req.headers['user-agent'],
+    referer: req.headers.referer
   }));
 }
 
+// Root endpoint
 app.get('/', (req, res) => {
-  res.send('Hi');
+  res.json({ 
+    service: 'Avenix Pixel Tracking Server',
+    status: 'active',
+    endpoints: ['/pixel/home', '/pixel/conversion', '/health']
+  });
 });
 
-// Endpoint for the homepage pixel
+// Homepage/General page pixel
 app.get('/pixel/home', (req, res) => {
   try {
     logPixelEvent(req, 'homepage');
-    res.status(200).json({ success: true });
+    res.status(200).json({ success: true, tracked: 'homepage' });
   } catch (err) {
     console.error('Error in /pixel/home:', err);
     res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 });
 
-// Endpoint for the thank-you page pixel
+// Conversion/Thank-you page pixel (renamed for broader use)
+app.get('/pixel/conversion', (req, res) => {
+  try {
+    logPixelEvent(req, 'conversion');
+    res.status(200).json({ success: true, tracked: 'conversion' });
+  } catch (err) {
+    console.error('Error in /pixel/conversion:', err);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
+
+// Backward compatibility for your current setup
 app.get('/pixel/thankyou', (req, res) => {
   try {
-    logPixelEvent(req, 'thankyou');
-    res.status(200).json({ success: true });
+    logPixelEvent(req, 'thank-you-page');
+    res.status(200).json({ success: true, tracked: 'thank-you-page' });
   } catch (err) {
     console.error('Error in /pixel/thankyou:', err);
     res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 });
 
-// Optional: health check
-app.get('/health', (req, res) => res.status(200).send('OK'));
+// Health check
+app.get('/health', (req, res) => res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() }));
 
 app.listen(port, () => {
-  console.log(`Pixel server listening at http://localhost:${port}`); //testingss
+  console.log(`Multi-client pixel server listening at http://localhost:${port}`);
 });
 
 module.exports = app;
