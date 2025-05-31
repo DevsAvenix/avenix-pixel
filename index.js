@@ -58,7 +58,7 @@ app.get('/pixel/thankyou', (req, res) => {
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
 app.listen(port, () => {
-  console.log(`Pixel server listening at http://localhost:${port}`); //testingss
+  console.log(`Pixel server listening at http://localhost:${port}`);
 });
 
 module.exports = app;
