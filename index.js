@@ -33,6 +33,7 @@ function logPixelEvent(req) {
   const clientId = getClientId(req);
   const pageURL = req.query.url || req.body.url || 'unknown';
   const eventTime = req.query.time || req.body.time || Date.now();
+  const timeSpent = req.query.timeSpent || 0; // Time spent on page in seconds
   const userDevice = req.query.device || req.body.device || req.headers['user-agent'] || 'unknown';
   
   // Enhanced structured log for all page tracking
@@ -42,6 +43,7 @@ function logPixelEvent(req) {
     ip,
     pageURL,
     eventTime: new Date(parseInt(eventTime)).toISOString(),
+    timeSpentSeconds: parseInt(timeSpent),
     userDevice,
     serverTimestamp: new Date().toISOString(),
     userAgent: req.headers['user-agent'],
