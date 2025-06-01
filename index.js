@@ -28,18 +28,17 @@ function getClientId(req) {
   return 'unknown';
 }
 
-function logPixelEvent(req, pixelSource) {
+function logPixelEvent(req) {
   const ip = getClientIp(req);
   const clientId = getClientId(req);
   const pageURL = req.query.url || req.body.url || 'unknown';
   const eventTime = req.query.time || req.body.time || Date.now();
   const userDevice = req.query.device || req.body.device || req.headers['user-agent'] || 'unknown';
   
-  // Enhanced structured log
+  // Enhanced structured log for all page tracking
   console.log(JSON.stringify({
-    event: 'pixel_tracking',
+    event: 'page_view',
     clientId,
-    pixelSource,
     ip,
     pageURL,
     eventTime: new Date(parseInt(eventTime)).toISOString(),
@@ -53,41 +52,19 @@ function logPixelEvent(req, pixelSource) {
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({ 
-    service: 'Avenix Pixel Tracking Server',
+    service: 'Avenix Universal Pixel Tracking Server',
     status: 'active',
-    endpoints: ['/pixel/home', '/pixel/conversion', '/health']
+    endpoints: ['/track', '/health']
   });
 });
 
-// Homepage/General page pixel
-app.get('/pixel/home', (req, res) => {
+// Universal tracking endpoint - tracks all page visits
+app.get('/track', (req, res) => {
   try {
-    logPixelEvent(req, 'homepage');
-    res.status(200).json({ success: true, tracked: 'homepage' });
+    logPixelEvent(req);
+    res.status(200).json({ success: true, tracked: 'page_view' });
   } catch (err) {
-    console.error('Error in /pixel/home:', err);
-    res.status(500).json({ success: false, error: 'Internal Server Error' });
-  }
-});
-
-// Conversion/Thank-you page pixel (renamed for broader use)
-app.get('/pixel/conversion', (req, res) => {
-  try {
-    logPixelEvent(req, 'conversion');
-    res.status(200).json({ success: true, tracked: 'conversion' });
-  } catch (err) {
-    console.error('Error in /pixel/conversion:', err);
-    res.status(500).json({ success: false, error: 'Internal Server Error' });
-  }
-});
-
-// Backward compatibility for your current setup
-app.get('/pixel/thankyou', (req, res) => {
-  try {
-    logPixelEvent(req, 'thank-you-page');
-    res.status(200).json({ success: true, tracked: 'thank-you-page' });
-  } catch (err) {
-    console.error('Error in /pixel/thankyou:', err);
+    console.error('Error in /track:', err);
     res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 });
@@ -96,7 +73,8 @@ app.get('/pixel/thankyou', (req, res) => {
 app.get('/health', (req, res) => res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() }));
 
 app.listen(port, () => {
-  console.log(`Multi-client pixel server listening at http://localhost:${port}`);
+  console.log(`Universal pixel server listening at http://localhost:${port}`);
 });
 
 module.exports = app;
+

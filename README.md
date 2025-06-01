@@ -1,46 +1,49 @@
-# Avenix Pixel Tracking Server
+# Avenix Universal Pixel Tracking Server
 
-A scalable pixel tracking solution for website analytics that supports multiple clients with a single server instance.
+A scalable universal pixel tracking solution that captures every page visit across multiple client websites with a single server instance.
 
 ## 🚀 Features
 
-- **Multi-client support** - One server handles hundreds of clients
+- **Universal page tracking** - One script tracks all pages on any website
+- **Multi-client support** - One server handles unlimited clients
 - **Automatic client detection** - Identifies clients by domain or custom ID
-- **Multiple pixel types** - Homepage views and conversion tracking
+- **Complete visitor journey** - Track every page visit and navigation pattern
 - **Real-time logging** - Structured JSON logs with full visitor data
-- **Easy integration** - Simple JavaScript snippet for clients
+- **Super simple integration** - Single JavaScript snippet for clients
 - **Vercel-optimized** - Serverless deployment ready
 
 ## 📊 Tracked Data
 
-Each pixel request captures:
+Each page visit captures:
 - ✅ Client identification (domain or custom ID)
-- ✅ Page URL and referrer
-- ✅ Timestamp (client and server)
+- ✅ Complete page URL and page title
+- ✅ Visit timestamp (client and server)
 - ✅ Device/browser information
 - ✅ IP address
-- ✅ Page type (homepage vs conversion)
+- ✅ Referrer information
+- ✅ User agent details
 
-## 🔗 Available Endpoints
+## 🔗 Endpoints
 
-| Endpoint | Purpose | Use Case |
-|----------|---------|-----------|
-| `/pixel/home` | Homepage/general page tracking | Track page views, navigation |
-| `/pixel/conversion` | Conversion tracking | Track purchases, signups, goals |
-| `/pixel/thankyou` | Legacy support | Backward compatibility |
-| `/health` | Health check | Server monitoring |
+| Endpoint | Purpose |
+|----------|---------|
+| `/track` | Universal page tracking (main endpoint) |
+| `/pixel/home` | Legacy support |
+| `/pixel/conversion` | Legacy support |
+| `/pixel/thankyou` | Legacy support |
+| `/health` | Health check |
 
 ## 🛠 Client Integration
 
-### Option 1: Basic Integration (Recommended)
-Automatic client detection from domain:
+### Simple Universal Script (Recommended)
+One script for all pages - automatic client detection:
 
-**Homepage tracking:**
 ```html
 <script>
+// Avenix Universal Pixel - Place before closing </body> tag
 (function() {
   var pixel = new Image();
-  pixel.src = 'https://avenix-pixel.vercel.app/pixel/home?url=' + 
+  pixel.src = 'https://avenix-pixel.vercel.app/track?url=' + 
     encodeURIComponent(window.location.href) + 
     '&time=' + Date.now() + 
     '&device=' + encodeURIComponent(navigator.userAgent);
@@ -50,12 +53,15 @@ Automatic client detection from domain:
 </script>
 ```
 
-**Conversion tracking:**
+### With Custom Client ID
+For better tracking control:
+
 ```html
 <script>
+// Replace CLIENT_ID with assigned identifier
 (function() {
   var pixel = new Image();
-  pixel.src = 'https://avenix-pixel.vercel.app/pixel/conversion?url=' + 
+  pixel.src = 'https://avenix-pixel.vercel.app/track?client=CLIENT_ID&url=' + 
     encodeURIComponent(window.location.href) + 
     '&time=' + Date.now() + 
     '&device=' + encodeURIComponent(navigator.userAgent);
@@ -65,33 +71,30 @@ Automatic client detection from domain:
 </script>
 ```
 
-### Option 2: With Client ID
-For better tracking control, add `client=YOUR_CLIENT_ID` parameter to the pixel URL.
+## 📈 Massive Scaling Benefits
 
-## 📈 Scaling Benefits
+- **Single script** - clients just copy/paste once on all pages
+- **Universal tracking** - automatically captures every page visit
+- **Zero configuration** - no setup needed for new pages
+- **Complete coverage** - never miss a page visit
+- **Simple maintenance** - update once, affects all clients
+- **Cost-effective** - one server handles unlimited traffic
 
-- **Single server instance** handles unlimited clients
-- **No per-client configuration** required
-- **Automatic client identification** reduces setup complexity
-- **Simple integration** for clients - just copy/paste script
-- **Cost-effective** - One Vercel deployment for all clients
-- **Easy maintenance** - Update once, affects all clients
+## 🚀 Client Instructions
 
-## 🚀 Deployment
-
-1. Deploy to Vercel: `vercel --prod`
-2. Update client scripts with your domain
-3. Monitor logs in Vercel dashboard
+**For your hundreds of clients:**
+1. Copy the script above
+2. Paste before `</body>` tag on every page
+3. Done! All pages are now tracked automatically
 
 ## 📝 Log Format
 
 ```json
 {
-  "event": "pixel_tracking",
+  "event": "page_view",
   "clientId": "example.com",
-  "pixelSource": "homepage",
   "ip": "192.168.1.1",
-  "pageURL": "https://example.com/page",
+  "pageURL": "https://example.com/any-page",
   "eventTime": "2024-01-01T12:00:00.000Z",
   "userDevice": "Mozilla/5.0...",
   "serverTimestamp": "2024-01-01T12:00:00.000Z",
@@ -112,6 +115,15 @@ npm start
 # Deploy to Vercel
 vercel --prod
 ```
+
+## 🎯 Perfect for Scale
+
+This solution is designed for businesses serving hundreds of clients:
+- ✅ **One server** handles unlimited clients and traffic
+- ✅ **One script** per client (place on all pages)
+- ✅ **Zero per-client setup** required
+- ✅ **Automatic tracking** of all pages
+- ✅ **Complete visitor analytics** out of the box
 
 ## 📞 Support
 
