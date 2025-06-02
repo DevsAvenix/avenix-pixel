@@ -7,9 +7,8 @@ app.use(express.json());
 
 // Configuration - Set your Make.com webhook URL here
 const WEBHOOK_CONFIG = {
-  enabled: true, // Set to false to disable webhook
-  url: process.env.MAKE_WEBHOOK_URL || 'https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm', // Your Make.com webhook URL
-  timeout: 15000 // 15 second timeout (Make.com can be slow sometimes)
+  enabled: true,
+  url: process.env.MAKE_WEBHOOK_URL || 'https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm'
 };
 
 // Serve static files from public directory
@@ -53,72 +52,72 @@ async function sendToWebhook(data) {
     return; // Skip if disabled or no URL configured
   }
 
-  try {
-    console.log('📤 Sending to webhook...');
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), WEBHOOK_CONFIG.timeout);
-    
-    const response = await fetch(WEBHOOK_CONFIG.url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Avenix-Pixel-Server/1.0'
-      },
-      body: JSON.stringify(data),
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
+  // Fire and forget - don't wait for response
+  fetch(WEBHOOK_CONFIG.url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Avenix-Pixel-Server/1.0'
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => {
     if (response.ok) {
-      const responseText = await response.text();
-      console.log('✅ Webhook sent successfully:', response.status, responseText);
+      console.log('✅ Webhook sent successfully:', response.status);
     } else {
-      console.log(`❌ Webhook failed: ${response.status} ${response.statusText}`);
+      console.log('❌ Webhook failed:', response.status, response.statusText);
     }
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.log(`⏰ Webhook timeout after ${WEBHOOK_CONFIG.timeout}ms`);
-    } else {
-      console.log('❌ Webhook error:', error.message);
+    return response.text();
+  })
+  .then(text => {
+    if (text) {
+      console.log('📝 Webhook response:', text);
     }
-  }
+  })
+  .catch(error => {
+    console.log('❌ Webhook error:', error.message);
+    // Check if it's a network/DNS issue
+    if (error.message.includes('fetch')) {
+      console.log('🔍 Network issue - check if Make.com URL is correct');
+    }
+  });
+
+  console.log('📤 Webhook request sent (fire-and-forget)');
 }
 
 function logPixelEvent(req) {
-  const ip = getClientIp(req);
-  const clientId = getClientId(req);
-  const pageURL = req.query.url || req.body.url || 'unknown';
-  const eventTime = req.query.time || req.body.time || Date.now();
-  const timeSpent = req.query.timeSpent || 0; // Time spent on page in seconds
-  const userDevice = req.query.device || req.body.device || req.headers['user-agent'] || 'unknown';
-  
-  // Enhanced structured log for all page tracking
-  const trackingData = {
-    event: 'page_view',
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  const pageURL = req.query.pageURL || req.headers.referer || 'unknown';
+  const clientId = req.query.clientId || 'unknown';
+  const event = req.query.event || 'page_view';
+  const eventTime = req.query.eventTime || new Date().toISOString();
+  const timeSpentSeconds = parseFloat(req.query.timeSpentSeconds) || 0;
+  const userDevice = req.query.userDevice || userAgent;
+  const referer = req.headers.referer || 'direct';
+
+  const eventData = {
+    event,
     clientId,
     ip,
     pageURL,
-    eventTime: new Date(parseInt(eventTime)).toISOString(),
-    timeSpentSeconds: parseInt(timeSpent),
+    eventTime,
+    timeSpentSeconds,
     userDevice,
     serverTimestamp: new Date().toISOString(),
-    userAgent: req.headers['user-agent'],
-    referer: req.headers.referer
+    userAgent,
+    referer
   };
 
-  // Log to console immediately (for Vercel logs)
-  console.log('📊 Tracking Data:', JSON.stringify(trackingData));
-
-  // Send to Make.com webhook asynchronously (non-blocking)
-  setImmediate(() => {
-    sendToWebhook(trackingData).catch(err => {
-      console.log('❌ Webhook send failed:', err.message);
-    });
+  console.log('🎯 Pixel fired:', {
+    client: clientId,
+    page: pageURL,
+    time: timeSpentSeconds + 's',
+    ip: ip.substring(0, 10) + '...',
+    event: event
   });
 
-  return trackingData;
+  return eventData;
 }
 
 // Root endpoint
@@ -146,8 +145,14 @@ app.get('/pixel.js', (req, res) => {
 // Universal tracking endpoint - tracks all page visits
 app.get('/track', (req, res) => {
   try {
-    logPixelEvent(req);
-    res.status(200).json({ success: true, tracked: 'page_view' });
+    const eventData = logPixelEvent(req);
+    console.log('📊 Event tracked:', eventData);
+    
+    // Send to webhook (fire-and-forget)
+    sendToWebhook(eventData);
+    
+    // Return immediately (don't wait for webhook)
+    res.status(200).json({ status: 'success', message: 'Event tracked' });
   } catch (err) {
     console.error('Error in /track:', err);
     res.status(500).json({ success: false, error: 'Internal Server Error' });
