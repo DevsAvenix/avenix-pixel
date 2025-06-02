@@ -52,6 +52,9 @@ function logPixelEvent(req) {
   console.log('📊 Event tracked:', eventData);
 
   // Send to Make.com
+  console.log('🚀 Sending to Make.com webhook...');
+  console.log('📦 Data being sent:', JSON.stringify(eventData));
+  
   fetch('https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
