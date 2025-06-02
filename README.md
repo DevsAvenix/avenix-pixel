@@ -1,16 +1,18 @@
 # Avenix Universal Pixel Tracking Server
 
-A scalable universal pixel tracking solution that captures every page visit and **time spent on each page** across multiple client websites with a single server instance.
+A scalable universal pixel tracking solution with **hosted JavaScript integration** that captures every page visit and time spent across unlimited client websites with just one line of code.
 
 ## 🚀 Features
 
-- **Universal page tracking** - One script tracks all pages on any website
+- **ONE LINE integration** - Clients just add `<script src="..."></script>`
+- **Centralized updates** - Modify script once, updates everywhere automatically
+- **Universal page tracking** - Tracks all pages on any website
 - **Time spent tracking** - Measures actual time users spend on each page
 - **Multi-client support** - One server handles unlimited clients
 - **Automatic client detection** - Identifies clients by domain or custom ID
-- **Complete visitor journey** - Track every page visit and engagement metrics
+- **Hosted JavaScript** - No complex code for clients to copy/paste
+- **Auto-caching** - Browser caches script for better performance
 - **Real-time logging** - Structured JSON logs with full visitor data
-- **Super simple integration** - Single JavaScript snippet for clients
 - **Vercel-optimized** - Serverless deployment ready
 
 ## 📊 Tracked Data
@@ -29,108 +31,39 @@ Each page visit captures:
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/track` | Universal page tracking with time spent |
+| `/pixel.js` | Hosted JavaScript tracking script |
+| `/track` | Universal page tracking API |
 | `/health` | Health check |
 
-## 🛠 Enhanced Client Integration
+## 🛠 Super Simple Client Integration
 
-### Time Tracking Script (Recommended)
-Captures actual time spent on each page:
+### For Your Clients - Just ONE Line!
 
 ```html
-<script>
-// Avenix Universal Pixel with Time Tracking
-(function() {
-  var startTime = Date.now();
-  var pageURL = window.location.href;
-  var sent = false;
-  
-  function sendPixel(timeSpent) {
-    if (sent) return; // Prevent duplicate sends
-    sent = true;
-    
-    var pixel = new Image();
-    pixel.src = 'https://avenix-pixel.vercel.app/track?url=' + 
-      encodeURIComponent(pageURL) + 
-      '&time=' + startTime + 
-      '&timeSpent=' + Math.round(timeSpent / 1000) + 
-      '&device=' + encodeURIComponent(navigator.userAgent);
-    pixel.style.display = 'none';
-    document.body.appendChild(pixel);
-  }
-  
-  // Send pixel when user leaves the page
-  window.addEventListener('beforeunload', function() {
-    var timeSpent = Date.now() - startTime;
-    sendPixel(timeSpent);
-  });
-  
-  // Send pixel when page becomes hidden (mobile/tab switching)
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-      var timeSpent = Date.now() - startTime;
-      sendPixel(timeSpent);
-    }
-  });
-  
-  // Fallback: send after 30 seconds if user is still on page
-  setTimeout(function() {
-    if (!sent) {
-      var timeSpent = Date.now() - startTime;
-      sendPixel(timeSpent);
-    }
-  }, 30000);
-  
-})();
-</script>
+<script src="https://avenix-pixel.vercel.app/pixel.js"></script>
 ```
 
-### With Custom Client ID
-For better tracking control:
+**That's it!** Place before `</body>` tag and all pages are tracked automatically with domain-based identification.
 
+### Advanced Options
+
+**Debug mode (for testing):**
 ```html
 <script>
-// Replace CLIENT_ID with assigned identifier
-(function() {
-  var startTime = Date.now();
-  var pageURL = window.location.href;
-  var sent = false;
-  var clientId = 'CLIENT_ID';
-  
-  function sendPixel(timeSpent) {
-    if (sent) return;
-    sent = true;
-    
-    var pixel = new Image();
-    pixel.src = 'https://avenix-pixel.vercel.app/track?client=' + clientId + 
-      '&url=' + encodeURIComponent(pageURL) + 
-      '&time=' + startTime + 
-      '&timeSpent=' + Math.round(timeSpent / 1000) + 
-      '&device=' + encodeURIComponent(navigator.userAgent);
-    pixel.style.display = 'none';
-    document.body.appendChild(pixel);
-  }
-  
-  window.addEventListener('beforeunload', function() {
-    var timeSpent = Date.now() - startTime;
-    sendPixel(timeSpent);
-  });
-  
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-      var timeSpent = Date.now() - startTime;
-      sendPixel(timeSpent);
-    }
-  });
-  
-  setTimeout(function() {
-    if (!sent) {
-      var timeSpent = Date.now() - startTime;
-      sendPixel(timeSpent);
-    }
-  }, 30000);
-  
-})();
+  window.AvenixConfig = { debug: true };
+</script>
+<script src="https://avenix-pixel.vercel.app/pixel.js"></script>
+```
+
+**Async loading (best performance):**
+```html
+<script>
+  (function() {
+    var s = document.createElement('script');
+    s.src = 'https://avenix-pixel.vercel.app/pixel.js';
+    s.async = true;
+    document.head.appendChild(s);
+  })();
 </script>
 ```
 
@@ -144,19 +77,35 @@ For better tracking control:
 
 ## 📈 Massive Scaling Benefits
 
-- **Single script** - clients just copy/paste once on all pages
+- **One line integration** - clients just add one script tag
+- **Centralized control** - update script logic once, affects all clients
 - **Universal tracking** - automatically captures every page visit + time spent
 - **Zero configuration** - no setup needed for new pages
-- **Complete analytics** - page views + engagement metrics
-- **Simple maintenance** - update once, affects all clients
+- **Browser caching** - script loads fast after first visit
+- **Version control** - track and manage script versions centrally
+- **Easy debugging** - enable debug mode for any client
 - **Cost-effective** - one server handles unlimited traffic
 
-## 🚀 Client Instructions
+## 🚀 For Your Hundreds of Clients
 
-**For your hundreds of clients:**
-1. Copy the enhanced script above
-2. Paste before `</body>` tag on every page
-3. Done! All pages tracked with time spent automatically
+**Give them this:**
+```html
+<script src="https://avenix-pixel.vercel.app/pixel.js"></script>
+```
+
+**Benefits for clients:**
+- ✅ Copy/paste once, works forever
+- ✅ Auto-updates with new features
+- ✅ No maintenance required
+- ✅ Fast loading and cached
+- ✅ Works on all pages automatically
+
+**Benefits for you:**
+- ✅ Update tracking logic anytime
+- ✅ No need to contact clients for updates
+- ✅ Version control and rollbacks
+- ✅ Centralized debugging
+- ✅ Easy A/B testing of tracking methods
 
 ## 📝 Enhanced Log Format
 
@@ -188,14 +137,14 @@ npm start
 vercel --prod
 ```
 
-## 🎯 Perfect for Scale + Analytics
+## 🎯 Perfect Solution for Scale
 
-This solution provides both scale and deep insights:
 - ✅ **One server** handles unlimited clients and traffic
-- ✅ **One script** per client (place on all pages)
-- ✅ **Zero per-client setup** required
-- ✅ **Page views + time spent** analytics
-- ✅ **Complete engagement metrics** out of the box
+- ✅ **One line of code** per client (add once, works forever)
+- ✅ **Centralized updates** - modify tracking logic anytime
+- ✅ **Zero per-client maintenance** required
+- ✅ **Complete analytics** - page views + engagement metrics
+- ✅ **Enterprise ready** - built for hundreds of clients
 
 ## 📞 Support
 

@@ -1,8 +1,21 @@
 const express = require('express');
+const path = require('path');
 const app = express();
 const port = 3000;
 
 app.use(express.json());
+
+// Serve static files from public directory
+app.use('/static', express.static(path.join(__dirname, 'public'), {
+  maxAge: '1h', // Cache for 1 hour (short for easy updates)
+  setHeaders: (res, path) => {
+    // Set CORS headers for JavaScript files
+    if (path.endsWith('.js')) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
 function getClientIp(req) {
   // Handles both single and multiple IPs in x-forwarded-for
@@ -56,8 +69,17 @@ app.get('/', (req, res) => {
   res.json({ 
     service: 'Avenix Universal Pixel Tracking Server',
     status: 'active',
-    endpoints: ['/track', '/health']
+    endpoints: ['/track', '/pixel.js', '/health'],
+    integration: 'Add this to your site: <script src="https://avenix-pixel.vercel.app/pixel.js"></script>'
   });
+});
+
+// Hosted JavaScript file endpoint (cleaner URL)
+app.get('/pixel.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+  res.sendFile(path.join(__dirname, 'public', 'avenix-pixel.js'));
 });
 
 // Universal tracking endpoint - tracks all page visits
