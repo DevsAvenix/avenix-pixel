@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const https = require('https');
 const app = express();
 const port = 3000;
 
@@ -23,36 +22,32 @@ app.use('/static', express.static(path.join(__dirname, 'public'), {
 
 async function sendToMake(data) {
   try {
-    const postData = JSON.stringify(data);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
-    const options = {
-      hostname: 'hook.us2.make.com',
-      port: 443,
-      path: '/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm',
+    const response = await fetch(MAKE_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      if (res.statusCode === 200) {
-        console.log('✅ Sent to Make.com successfully');
-      } else {
-        console.log('❌ Make.com error:', res.statusCode);
-      }
+        'User-Agent': 'Avenix-Pixel/1.0'
+      },
+      body: JSON.stringify(data),
+      signal: controller.signal
     });
 
-    req.on('error', (error) => {
-      console.log('❌ Failed to send to Make.com:', error.message);
-    });
+    clearTimeout(timeoutId);
 
-    req.write(postData);
-    req.end();
-    
+    if (response.ok) {
+      console.log('✅ Sent to Make.com successfully:', response.status);
+    } else {
+      console.log('❌ Make.com error:', response.status, response.statusText);
+    }
   } catch (error) {
-    console.log('❌ Failed to send to Make.com:', error.message);
+    if (error.name === 'AbortError') {
+      console.log('❌ Make.com timeout after 10 seconds');
+    } else {
+      console.log('❌ Failed to send to Make.com:', error.message);
+    }
   }
 }
 
