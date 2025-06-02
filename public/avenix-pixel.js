@@ -38,11 +38,12 @@
     try {
       var pixel = new Image();
       var params = [
-        'client=' + encodeURIComponent(clientId),
-        'url=' + encodeURIComponent(pageURL),
-        'time=' + startTime,
-        'timeSpent=' + Math.round(timeSpent / 1000),
-        'device=' + encodeURIComponent(navigator.userAgent)
+        'clientId=' + encodeURIComponent(clientId),
+        'pageURL=' + encodeURIComponent(pageURL),
+        'eventTime=' + new Date(startTime).toISOString(),
+        'timeSpentSeconds=' + Math.round(timeSpent / 1000),
+        'userDevice=' + encodeURIComponent(navigator.userAgent),
+        'event=page_view'
       ];
       
       pixel.src = config.endpoint + '?' + params.join('&');

@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const https = require('https');
 const app = express();
 const port = 3000;
 
@@ -46,19 +47,34 @@ function getClientId(req) {
 
 async function sendToMake(data) {
   try {
-    const response = await fetch(MAKE_WEBHOOK_URL, {
+    const postData = JSON.stringify(data);
+    
+    const options = {
+      hostname: 'hook.us2.make.com',
+      port: 443,
+      path: '/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm',
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      if (res.statusCode === 200) {
+        console.log('✅ Sent to Make.com successfully');
+      } else {
+        console.log('❌ Make.com error:', res.statusCode);
+      }
     });
+
+    req.on('error', (error) => {
+      console.log('❌ Failed to send to Make.com:', error.message);
+    });
+
+    req.write(postData);
+    req.end();
     
-    if (response.ok) {
-      console.log('✅ Sent to Make.com successfully');
-    } else {
-      console.log('❌ Make.com error:', response.status);
-    }
   } catch (error) {
     console.log('❌ Failed to send to Make.com:', error.message);
   }
