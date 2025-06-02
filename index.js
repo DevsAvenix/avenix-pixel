@@ -5,9 +5,6 @@ const port = 3000;
 
 app.use(express.json());
 
-// Configuration - Set your Make.com webhook URL here
-const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm';
-
 // Serve static files from public directory
 app.use('/static', express.static(path.join(__dirname, 'public'), {
   maxAge: '1h', // Cache for 1 hour (short for easy updates)
@@ -19,37 +16,6 @@ app.use('/static', express.static(path.join(__dirname, 'public'), {
     }
   }
 }));
-
-async function sendToMake(data) {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    const response = await fetch(MAKE_WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Avenix-Pixel/1.0'
-      },
-      body: JSON.stringify(data),
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      console.log('✅ Sent to Make.com successfully:', response.status);
-    } else {
-      console.log('❌ Make.com error:', response.status, response.statusText);
-    }
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.log('❌ Make.com timeout after 10 seconds');
-    } else {
-      console.log('❌ Failed to send to Make.com:', error.message);
-    }
-  }
-}
 
 function logPixelEvent(req) {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
@@ -83,6 +49,15 @@ function logPixelEvent(req) {
     event: event
   });
 
+  console.log('📊 Event tracked:', eventData);
+
+  // Send to Make.com
+  fetch('https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eventData)
+  }).catch(() => {}); // Silent fail
+
   return eventData;
 }
 
@@ -92,11 +67,7 @@ app.get('/', (req, res) => {
     service: 'Avenix Universal Pixel Tracking Server',
     status: 'active',
     endpoints: ['/track', '/pixel.js', '/health'],
-    integration: 'Add this to your site: <script src="https://avenix-pixel.vercel.app/pixel.js"></script>',
-    webhook: {
-      enabled: true,
-      configured: !!MAKE_WEBHOOK_URL
-    }
+    integration: 'Add this to your site: <script src="https://avenix-pixel.vercel.app/pixel.js"></script>'
   });
 });
 
@@ -111,13 +82,7 @@ app.get('/pixel.js', (req, res) => {
 // Universal tracking endpoint - tracks all page visits
 app.get('/track', (req, res) => {
   try {
-    const eventData = logPixelEvent(req);
-    console.log('📊 Event tracked:', eventData);
-    
-    // Send to webhook (fire-and-forget)
-    sendToMake(eventData);
-    
-    // Return immediately (don't wait for webhook)
+    logPixelEvent(req);
     res.status(200).json({ status: 'success', message: 'Event tracked' });
   } catch (err) {
     console.error('Error in /track:', err);
@@ -128,20 +93,11 @@ app.get('/track', (req, res) => {
 // Health check
 app.get('/health', (req, res) => res.status(200).json({ 
   status: 'healthy', 
-  timestamp: new Date().toISOString(),
-  webhook: {
-    enabled: true,
-    configured: !!MAKE_WEBHOOK_URL
-  }
+  timestamp: new Date().toISOString()
 }));
 
 app.listen(port, () => {
   console.log(`Universal pixel server listening at http://localhost:${port}`);
-  if (MAKE_WEBHOOK_URL) {
-    console.log(`📡 Webhook enabled: ${MAKE_WEBHOOK_URL}`);
-  } else {
-    console.log('📡 Webhook disabled - configure MAKE_WEBHOOK_URL to enable');
-  }
 });
 
 module.exports = app;
