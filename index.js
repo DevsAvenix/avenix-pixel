@@ -9,7 +9,7 @@ app.use(express.json());
 const WEBHOOK_CONFIG = {
   enabled: true, // Set to false to disable webhook
   url: process.env.MAKE_WEBHOOK_URL || 'https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm', // Your Make.com webhook URL
-  timeout: 5000 // 5 second timeout
+  timeout: 15000 // 15 second timeout (Make.com can be slow sometimes)
 };
 
 // Serve static files from public directory
@@ -54,25 +54,34 @@ async function sendToWebhook(data) {
   }
 
   try {
+    console.log('📤 Sending to webhook...');
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), WEBHOOK_CONFIG.timeout);
+    
     const response = await fetch(WEBHOOK_CONFIG.url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': 'Avenix-Pixel-Server/1.0'
       },
       body: JSON.stringify(data),
-      signal: AbortSignal.timeout(WEBHOOK_CONFIG.timeout)
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
+
     if (response.ok) {
-      console.log('✅ Webhook sent successfully');
+      const responseText = await response.text();
+      console.log('✅ Webhook sent successfully:', response.status, responseText);
     } else {
-      console.log(`⚠️ Webhook failed: ${response.status} ${response.statusText}`);
+      console.log(`❌ Webhook failed: ${response.status} ${response.statusText}`);
     }
   } catch (error) {
-    if (error.name === 'TimeoutError') {
-      console.log('⚠️ Webhook timeout');
+    if (error.name === 'AbortError') {
+      console.log(`⏰ Webhook timeout after ${WEBHOOK_CONFIG.timeout}ms`);
     } else {
-      console.log('⚠️ Webhook error:', error.message);
+      console.log('❌ Webhook error:', error.message);
     }
   }
 }
@@ -99,12 +108,14 @@ function logPixelEvent(req) {
     referer: req.headers.referer
   };
 
-  // Log to console (for Vercel logs)
-  console.log(JSON.stringify(trackingData));
+  // Log to console immediately (for Vercel logs)
+  console.log('📊 Tracking Data:', JSON.stringify(trackingData));
 
-  // Send to Make.com webhook (async, non-blocking)
-  sendToWebhook(trackingData).catch(err => {
-    console.log('Webhook send failed:', err.message);
+  // Send to Make.com webhook asynchronously (non-blocking)
+  setImmediate(() => {
+    sendToWebhook(trackingData).catch(err => {
+      console.log('❌ Webhook send failed:', err.message);
+    });
   });
 
   return trackingData;
