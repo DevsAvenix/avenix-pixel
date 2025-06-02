@@ -21,30 +21,6 @@ app.use('/static', express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-function getClientIp(req) {
-  // Handles both single and multiple IPs in x-forwarded-for
-  const xForwardedFor = req.headers['x-forwarded-for'];
-  return xForwardedFor ? xForwardedFor.split(',')[0].trim() : req.socket.remoteAddress;
-}
-
-function getClientId(req) {
-  // Multiple ways to identify client (in order of preference)
-  if (req.query.client) return req.query.client;
-  
-  // Extract from referrer domain
-  const referer = req.headers.referer;
-  if (referer) {
-    try {
-      const url = new URL(referer);
-      return url.hostname;
-    } catch (e) {
-      return 'unknown-domain';
-    }
-  }
-  
-  return 'unknown';
-}
-
 async function sendToMake(data) {
   try {
     const postData = JSON.stringify(data);
