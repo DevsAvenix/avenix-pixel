@@ -56,7 +56,17 @@ function logPixelEvent(req) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(eventData)
-  }).catch(() => {}); // Silent fail
+  })
+  .then(response => {
+    console.log('✅ Make.com response:', response.status);
+    return response.text();
+  })
+  .then(text => {
+    if (text) console.log('📝 Make.com body:', text);
+  })
+  .catch(error => {
+    console.log('❌ Make.com error:', error.message);
+  });
 
   return eventData;
 }
