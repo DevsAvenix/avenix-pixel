@@ -5,6 +5,13 @@ const port = 3000;
 
 app.use(express.json());
 
+// Configuration - Set your Make.com webhook URL here
+const WEBHOOK_CONFIG = {
+  enabled: true, // Set to false to disable webhook
+  url: process.env.MAKE_WEBHOOK_URL || 'https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm', // Your Make.com webhook URL
+  timeout: 5000 // 5 second timeout
+};
+
 // Serve static files from public directory
 app.use('/static', express.static(path.join(__dirname, 'public'), {
   maxAge: '1h', // Cache for 1 hour (short for easy updates)
@@ -41,6 +48,35 @@ function getClientId(req) {
   return 'unknown';
 }
 
+async function sendToWebhook(data) {
+  if (!WEBHOOK_CONFIG.enabled || !WEBHOOK_CONFIG.url) {
+    return; // Skip if disabled or no URL configured
+  }
+
+  try {
+    const response = await fetch(WEBHOOK_CONFIG.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(WEBHOOK_CONFIG.timeout)
+    });
+
+    if (response.ok) {
+      console.log('✅ Webhook sent successfully');
+    } else {
+      console.log(`⚠️ Webhook failed: ${response.status} ${response.statusText}`);
+    }
+  } catch (error) {
+    if (error.name === 'TimeoutError') {
+      console.log('⚠️ Webhook timeout');
+    } else {
+      console.log('⚠️ Webhook error:', error.message);
+    }
+  }
+}
+
 function logPixelEvent(req) {
   const ip = getClientIp(req);
   const clientId = getClientId(req);
@@ -50,7 +86,7 @@ function logPixelEvent(req) {
   const userDevice = req.query.device || req.body.device || req.headers['user-agent'] || 'unknown';
   
   // Enhanced structured log for all page tracking
-  console.log(JSON.stringify({
+  const trackingData = {
     event: 'page_view',
     clientId,
     ip,
@@ -61,7 +97,17 @@ function logPixelEvent(req) {
     serverTimestamp: new Date().toISOString(),
     userAgent: req.headers['user-agent'],
     referer: req.headers.referer
-  }));
+  };
+
+  // Log to console (for Vercel logs)
+  console.log(JSON.stringify(trackingData));
+
+  // Send to Make.com webhook (async, non-blocking)
+  sendToWebhook(trackingData).catch(err => {
+    console.log('Webhook send failed:', err.message);
+  });
+
+  return trackingData;
 }
 
 // Root endpoint
@@ -70,7 +116,11 @@ app.get('/', (req, res) => {
     service: 'Avenix Universal Pixel Tracking Server',
     status: 'active',
     endpoints: ['/track', '/pixel.js', '/health'],
-    integration: 'Add this to your site: <script src="https://avenix-pixel.vercel.app/pixel.js"></script>'
+    integration: 'Add this to your site: <script src="https://avenix-pixel.vercel.app/pixel.js"></script>',
+    webhook: {
+      enabled: WEBHOOK_CONFIG.enabled,
+      configured: !!WEBHOOK_CONFIG.url
+    }
   });
 });
 
@@ -94,10 +144,22 @@ app.get('/track', (req, res) => {
 });
 
 // Health check
-app.get('/health', (req, res) => res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() }));
+app.get('/health', (req, res) => res.status(200).json({ 
+  status: 'healthy', 
+  timestamp: new Date().toISOString(),
+  webhook: {
+    enabled: WEBHOOK_CONFIG.enabled,
+    configured: !!WEBHOOK_CONFIG.url
+  }
+}));
 
 app.listen(port, () => {
   console.log(`Universal pixel server listening at http://localhost:${port}`);
+  if (WEBHOOK_CONFIG.enabled && WEBHOOK_CONFIG.url) {
+    console.log(`📡 Webhook enabled: ${WEBHOOK_CONFIG.url}`);
+  } else {
+    console.log('📡 Webhook disabled - configure MAKE_WEBHOOK_URL to enable');
+  }
 });
 
 module.exports = app;

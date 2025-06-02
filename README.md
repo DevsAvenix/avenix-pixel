@@ -148,4 +148,18 @@ vercel --prod
 
 ## 📞 Support
 
-For integration support or custom requirements, contact the Avenix team. 
+For integration support or custom requirements, contact the Avenix team.
+
+## 🔗 Make.com Webhook Integration
+
+**Automatically send all tracking data to Make.com for powerful automation workflows!**
+
+- ✅ **CRM Integration** - Auto-add leads to HubSpot, Salesforce, etc.
+- ✅ **Email Alerts** - Notify sales team of high-engagement visitors  
+- ✅ **Analytics Dashboard** - Send data to Google Sheets, Airtable
+- ✅ **Slack Notifications** - Alert team of target company visits
+- ✅ **Custom Workflows** - Unlimited automation possibilities
+
+**Setup:** Configure `MAKE_WEBHOOK_URL` environment variable → See `WEBHOOK_SETUP.md` for details.
+
+--- 
