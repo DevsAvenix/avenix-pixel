@@ -6,10 +6,7 @@ const port = 3000;
 app.use(express.json());
 
 // Configuration - Set your Make.com webhook URL here
-const WEBHOOK_CONFIG = {
-  enabled: true,
-  url: process.env.MAKE_WEBHOOK_URL || 'https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm'
-};
+const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm';
 
 // Serve static files from public directory
 app.use('/static', express.static(path.join(__dirname, 'public'), {
@@ -47,42 +44,24 @@ function getClientId(req) {
   return 'unknown';
 }
 
-async function sendToWebhook(data) {
-  if (!WEBHOOK_CONFIG.enabled || !WEBHOOK_CONFIG.url) {
-    return; // Skip if disabled or no URL configured
-  }
-
-  // Fire and forget - don't wait for response
-  fetch(WEBHOOK_CONFIG.url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Agent': 'Avenix-Pixel-Server/1.0'
-    },
-    body: JSON.stringify(data)
-  })
-  .then(response => {
+async function sendToMake(data) {
+  try {
+    const response = await fetch(MAKE_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    
     if (response.ok) {
-      console.log('✅ Webhook sent successfully:', response.status);
+      console.log('✅ Sent to Make.com successfully');
     } else {
-      console.log('❌ Webhook failed:', response.status, response.statusText);
+      console.log('❌ Make.com error:', response.status);
     }
-    return response.text();
-  })
-  .then(text => {
-    if (text) {
-      console.log('📝 Webhook response:', text);
-    }
-  })
-  .catch(error => {
-    console.log('❌ Webhook error:', error.message);
-    // Check if it's a network/DNS issue
-    if (error.message.includes('fetch')) {
-      console.log('🔍 Network issue - check if Make.com URL is correct');
-    }
-  });
-
-  console.log('📤 Webhook request sent (fire-and-forget)');
+  } catch (error) {
+    console.log('❌ Failed to send to Make.com:', error.message);
+  }
 }
 
 function logPixelEvent(req) {
@@ -128,8 +107,8 @@ app.get('/', (req, res) => {
     endpoints: ['/track', '/pixel.js', '/health'],
     integration: 'Add this to your site: <script src="https://avenix-pixel.vercel.app/pixel.js"></script>',
     webhook: {
-      enabled: WEBHOOK_CONFIG.enabled,
-      configured: !!WEBHOOK_CONFIG.url
+      enabled: true,
+      configured: !!MAKE_WEBHOOK_URL
     }
   });
 });
@@ -149,7 +128,7 @@ app.get('/track', (req, res) => {
     console.log('📊 Event tracked:', eventData);
     
     // Send to webhook (fire-and-forget)
-    sendToWebhook(eventData);
+    sendToMake(eventData);
     
     // Return immediately (don't wait for webhook)
     res.status(200).json({ status: 'success', message: 'Event tracked' });
@@ -164,15 +143,15 @@ app.get('/health', (req, res) => res.status(200).json({
   status: 'healthy', 
   timestamp: new Date().toISOString(),
   webhook: {
-    enabled: WEBHOOK_CONFIG.enabled,
-    configured: !!WEBHOOK_CONFIG.url
+    enabled: true,
+    configured: !!MAKE_WEBHOOK_URL
   }
 }));
 
 app.listen(port, () => {
   console.log(`Universal pixel server listening at http://localhost:${port}`);
-  if (WEBHOOK_CONFIG.enabled && WEBHOOK_CONFIG.url) {
-    console.log(`📡 Webhook enabled: ${WEBHOOK_CONFIG.url}`);
+  if (MAKE_WEBHOOK_URL) {
+    console.log(`📡 Webhook enabled: ${MAKE_WEBHOOK_URL}`);
   } else {
     console.log('📡 Webhook disabled - configure MAKE_WEBHOOK_URL to enable');
   }
