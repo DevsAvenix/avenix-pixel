@@ -51,26 +51,6 @@ function logPixelEvent(req) {
 
   console.log('📊 Event tracked:', eventData);
 
-  // Send to Make.com
-  console.log('🚀 Sending to Make.com webhook...');
-  console.log('📦 Data being sent:', JSON.stringify(eventData));
-  
-  fetch('https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(eventData)
-  })
-  .then(response => {
-    console.log('✅ Make.com response:', response.status);
-    return response.text();
-  })
-  .then(text => {
-    if (text) console.log('📝 Make.com body:', text);
-  })
-  .catch(error => {
-    console.log('❌ Make.com error:', error.message);
-  });
-
   return eventData;
 }
 
@@ -93,9 +73,28 @@ app.get('/pixel.js', (req, res) => {
 });
 
 // Universal tracking endpoint - tracks all page visits
-app.get('/track', (req, res) => {
+app.get('/track', async (req, res) => {
   try {
-    logPixelEvent(req);
+    const eventData = logPixelEvent(req);
+    
+    // Send to Make.com webhook
+    try {
+      console.log('🚀 Sending to Make.com webhook...');
+      const response = await fetch('https://hook.us2.make.com/3ck6uh1nfot8dg8hqbtcubhptt5r9pfm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventData)
+      });
+      
+      if (response.ok) {
+        console.log('✅ Make.com webhook sent successfully:', response.status);
+      } else {
+        console.log('❌ Make.com webhook failed:', response.status);
+      }
+    } catch (webhookError) {
+      console.log('❌ Make.com webhook error:', webhookError.message);
+    }
+    
     res.status(200).json({ status: 'success', message: 'Event tracked' });
   } catch (err) {
     console.error('Error in /track:', err);
